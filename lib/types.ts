@@ -26,6 +26,8 @@ export type Photo = {
   category: string;
   image_url: string;
   description: string | null;
-  created_at: string;
+  photo_date: string | null; // date complète de la photo (YYYY-MM-DD), si connue
+  photo_year: number; // année de la photo (toujours renseignée)
+  created_at: string; // date de mise en ligne
   profile?: Profile | null;
 };

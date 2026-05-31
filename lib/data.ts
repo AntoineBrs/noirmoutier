@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 import { demoProfiles, demoStays, demoPhotos } from "./demo";
+import { comparePhotos } from "./photos";
 import type { Profile, Stay, Photo } from "./types";
 
 // Couche d'accès aux données.
@@ -102,16 +103,14 @@ export async function deleteStay(id: string): Promise<void> {
 
 export async function fetchPhotos(): Promise<Photo[]> {
   if (!isSupabaseConfigured) {
-    return [...memPhotos].sort((a, b) =>
-      b.created_at.localeCompare(a.created_at),
-    );
+    return [...memPhotos].sort(comparePhotos);
   }
   const { data, error } = await supabase!
     .from("photos")
-    .select("*, profile:profiles(*)")
-    .order("created_at", { ascending: false });
+    .select("*, profile:profiles(*)");
   if (error) throw error;
-  return data as Photo[];
+  // Tri par date de photo (année + date), plus récent en haut
+  return (data as Photo[]).sort(comparePhotos);
 }
 
 export type PhotoInput = {
@@ -119,6 +118,8 @@ export type PhotoInput = {
   category: string;
   image_url: string;
   description: string | null;
+  photo_date: string | null;
+  photo_year: number;
 };
 
 export async function createPhoto(input: PhotoInput): Promise<void> {

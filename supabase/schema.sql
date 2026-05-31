@@ -32,7 +32,9 @@ create table if not exists photos (
   category text not null check (category in ('noirmoutier', 'famille', 'quotidien')),
   image_url text not null,
   description text,
-  created_at timestamptz not null default now()
+  photo_date date,                        -- date complète de la photo (facultatif)
+  photo_year int not null default extract(year from now())::int, -- année de la photo
+  created_at timestamptz not null default now() -- date de mise en ligne
 );
 
 -- ============================================================

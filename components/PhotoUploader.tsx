@@ -16,10 +16,17 @@ export function PhotoUploader({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const years = Array.from({ length: currentYear - 1949 }, (_, i) => currentYear - i);
+
   const [category, setCategory] = useState(defaultCategory);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [description, setDescription] = useState("");
+  const [dateMode, setDateMode] = useState<"full" | "year">("full");
+  const [fullDate, setFullDate] = useState(today.toISOString().slice(0, 10));
+  const [year, setYear] = useState(currentYear);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -37,6 +44,13 @@ export function PhotoUploader({
       setError("Choisis une photo à envoyer.");
       return;
     }
+    if (dateMode === "full" && !fullDate) {
+      setError("Indique la date de la photo.");
+      return;
+    }
+    const photo_date = dateMode === "full" ? fullDate : null;
+    const photo_year =
+      dateMode === "full" ? Number(fullDate.slice(0, 4)) : year;
     setSaving(true);
     try {
       const url = await uploadImage("photos", file);
@@ -45,6 +59,8 @@ export function PhotoUploader({
         category,
         image_url: url,
         description: description.trim() || null,
+        photo_date,
+        photo_year,
       });
       onSaved();
       onClose();
@@ -108,6 +124,58 @@ export function PhotoUploader({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* DATE DE LA PHOTO */}
+        <div>
+          <span className="block text-sm font-medium text-ocean-700/80 mb-1.5">
+            Date de la photo
+          </span>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setDateMode("full")}
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                dateMode === "full"
+                  ? "border-ocean-500 bg-ocean-500/10 text-ocean-700"
+                  : "border-ocean-500/20 text-ocean-600/70 hover:border-ocean-500/40"
+              }`}
+            >
+              Date complète
+            </button>
+            <button
+              type="button"
+              onClick={() => setDateMode("year")}
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                dateMode === "year"
+                  ? "border-ocean-500 bg-ocean-500/10 text-ocean-700"
+                  : "border-ocean-500/20 text-ocean-600/70 hover:border-ocean-500/40"
+              }`}
+            >
+              Année seulement
+            </button>
+          </div>
+          {dateMode === "full" ? (
+            <input
+              type="date"
+              value={fullDate}
+              max={today.toISOString().slice(0, 10)}
+              onChange={(e) => setFullDate(e.target.value)}
+              className="w-full rounded-xl border border-ocean-500/20 bg-white px-3 py-2.5 text-ocean-700 focus:outline-none focus:border-ocean-500"
+            />
+          ) : (
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="w-full rounded-xl border border-ocean-500/20 bg-white px-3 py-2.5 text-ocean-700 focus:outline-none focus:border-ocean-500"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <label className="block">

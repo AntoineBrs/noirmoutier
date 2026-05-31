@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Avatar } from "./Avatar";
 import type { Photo } from "@/lib/types";
 import { formatDate } from "@/lib/dates";
+import { photoDateLabel } from "@/lib/photos";
 import { updatePhotoDescription, deletePhoto } from "@/lib/data";
 
 export function Lightbox({
@@ -97,7 +98,7 @@ export function Lightbox({
                 {photo.profile?.name ?? "Quelqu'un"}
               </p>
               <p className="text-xs text-ocean-600/60">
-                {formatDate(photo.created_at)}
+                📷 {photoDateLabel(photo)}
               </p>
             </div>
           </div>
@@ -140,6 +141,9 @@ export function Lightbox({
           )}
 
           <div className="mt-auto pt-5 space-y-2">
+            <p className="text-xs text-ocean-600/40">
+              Ajoutée le {formatDate(photo.created_at)}
+            </p>
             <button
               onClick={download}
               className="w-full bg-ocean-500 text-white font-medium py-2.5 rounded-full hover:bg-ocean-600 transition-colors"
