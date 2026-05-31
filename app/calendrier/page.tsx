@@ -110,12 +110,6 @@ export default function CalendrierPage() {
             <span className="text-ocean-700/80">{m.label}</span>
           </div>
         ))}
-        <div className="flex items-center gap-1.5 text-sm text-ocean-700/80">
-          <span className="inline-flex items-center justify-center text-xs bg-ocean-700 text-white rounded-full px-1.5 h-5 min-w-[20px]">
-            5
-          </span>
-          = personnes présentes ce jour
-        </div>
       </div>
 
       {/* Navigation mois */}

@@ -6,18 +6,16 @@ export function stayCount(stay: Stay): number {
 }
 
 // Nombre total de personnes présentes un jour donné, toutes maisons confondues.
-// Les membres de la famille sont comptés une seule fois même s'ils
-// apparaissent dans plusieurs séjours le même jour.
+// C'est la SOMME des personnes de tous les séjours présents ce jour-là
+// (ex : un séjour de 3 + un séjour de 2 le même jour = 5).
 export function peopleOnDay(stays: Stay[], dayStr: string): number {
-  const memberSet = new Set<string>();
-  let extras = 0;
+  let total = 0;
   for (const s of stays) {
     if (s.arrival <= dayStr && s.departure >= dayStr) {
-      (s.member_ids || []).forEach((id) => memberSet.add(id));
-      extras += (s.extra_guests || []).length;
+      total += stayCount(s);
     }
   }
-  return memberSet.size + extras;
+  return total;
 }
 
 // Résout les profils participants d'un séjour à partir de la liste complète.

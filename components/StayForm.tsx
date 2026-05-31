@@ -323,13 +323,20 @@ export function Modal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Fond */}
+      <div className="fixed inset-0 bg-ocean-700/40 backdrop-blur-sm" />
+      {/* Conteneur défilant : permet d'atteindre le haut ET le bas du formulaire */}
       <div
-        className="fixed inset-0 bg-ocean-700/40 backdrop-blur-sm"
+        className="relative flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4"
         onClick={onClose}
-      />
-      <div className="relative bg-sel w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-soft p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-fade-in-up my-0 sm:my-8">
-        {children}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative bg-sel w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-soft p-6 sm:p-8 animate-fade-in-up my-0 sm:my-8"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
