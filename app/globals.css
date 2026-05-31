@@ -43,19 +43,10 @@ body {
   animation: fadeInUp 0.5s ease forwards;
 }
 
-/* Masonry simple pour la galerie */
+/* Masonry pour la galerie — le nombre de colonnes est piloté par les
+   classes Tailwind columns-* sur le conteneur (voir page carnet). */
 .masonry {
   column-gap: 1rem;
-}
-@media (min-width: 640px) {
-  .masonry {
-    column-count: 2;
-  }
-}
-@media (min-width: 1024px) {
-  .masonry {
-    column-count: 3;
-  }
 }
 .masonry > * {
   break-inside: avoid;

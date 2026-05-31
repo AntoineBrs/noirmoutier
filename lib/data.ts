@@ -156,6 +156,24 @@ export async function updatePhotoDescription(
   if (error) throw error;
 }
 
+export async function updatePhotoDate(
+  id: string,
+  photo_date: string | null,
+  photo_year: number,
+): Promise<void> {
+  if (!isSupabaseConfigured) {
+    memPhotos = memPhotos.map((p) =>
+      p.id === id ? { ...p, photo_date, photo_year } : p,
+    );
+    return;
+  }
+  const { error } = await supabase!
+    .from("photos")
+    .update({ photo_date, photo_year })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function deletePhoto(id: string): Promise<void> {
   if (!isSupabaseConfigured) {
     memPhotos = memPhotos.filter((p) => p.id !== id);

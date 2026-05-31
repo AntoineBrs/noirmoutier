@@ -24,6 +24,23 @@ export default function CarnetPage() {
   const [month, setMonth] = useState<number | "all">("all");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [active, setActive] = useState<Photo | null>(null);
+  const [mobileCols, setMobileCols] = useState<1 | 2>(1);
+
+  useEffect(() => {
+    const v = localStorage.getItem("noirmoutier:mobileCols");
+    if (v === "2") setMobileCols(2);
+  }, []);
+
+  function chooseCols(n: 1 | 2) {
+    setMobileCols(n);
+    localStorage.setItem("noirmoutier:mobileCols", String(n));
+  }
+
+  // Colonnes mobiles selon le choix ; tablette/ordinateur inchangés
+  const colsClass =
+    mobileCols === 2
+      ? "columns-2 sm:columns-2 lg:columns-3"
+      : "columns-1 sm:columns-2 lg:columns-3";
 
   async function load() {
     try {
@@ -93,15 +110,14 @@ export default function CarnetPage() {
       </div>
 
       {/* Filtres année / mois */}
-      <div className="flex flex-wrap items-center gap-3 mb-8">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <span className="text-sm text-ocean-600/70">Filtrer&nbsp;:</span>
-        <select
-          value={year}
-          onChange={(e) => {
-            setYear(e.target.value === "all" ? "all" : Number(e.target.value));
+        <SelectPill
+          value={String(year)}
+          onChange={(v) => {
+            setYear(v === "all" ? "all" : Number(v));
             setMonth("all");
           }}
-          className="rounded-full border border-ocean-500/20 bg-white px-4 py-2 text-sm text-ocean-700 focus:outline-none focus:border-ocean-500"
         >
           <option value="all">Toutes les années</option>
           {years.map((y) => (
@@ -109,14 +125,11 @@ export default function CarnetPage() {
               {y}
             </option>
           ))}
-        </select>
+        </SelectPill>
         {year !== "all" && months.length > 0 && (
-          <select
-            value={month}
-            onChange={(e) =>
-              setMonth(e.target.value === "all" ? "all" : Number(e.target.value))
-            }
-            className="rounded-full border border-ocean-500/20 bg-white px-4 py-2 text-sm text-ocean-700 focus:outline-none focus:border-ocean-500"
+          <SelectPill
+            value={String(month)}
+            onChange={(v) => setMonth(v === "all" ? "all" : Number(v))}
           >
             <option value="all">Tous les mois</option>
             {months.map((m) => (
@@ -124,7 +137,7 @@ export default function CarnetPage() {
                 {monthName(m)}
               </option>
             ))}
-          </select>
+          </SelectPill>
         )}
         {(year !== "all" || month !== "all") && (
           <button
@@ -137,6 +150,38 @@ export default function CarnetPage() {
             Réinitialiser
           </button>
         )}
+      </div>
+
+      {/* Choix d'affichage (téléphone uniquement) */}
+      <div className="flex sm:hidden items-center justify-end gap-2 mb-6">
+        <span className="text-xs text-ocean-600/60 mr-1">Affichage&nbsp;:</span>
+        <button
+          onClick={() => chooseCols(1)}
+          aria-label="Une grande photo par ligne"
+          className={`w-9 h-9 rounded-lg border flex items-center justify-center transition-colors ${
+            mobileCols === 1
+              ? "border-ocean-500 bg-ocean-500/10 text-ocean-700"
+              : "border-ocean-500/20 text-ocean-600/50"
+          }`}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="2" y="2" width="12" height="12" rx="2" />
+          </svg>
+        </button>
+        <button
+          onClick={() => chooseCols(2)}
+          aria-label="Deux photos par ligne"
+          className={`w-9 h-9 rounded-lg border flex items-center justify-center transition-colors ${
+            mobileCols === 2
+              ? "border-ocean-500 bg-ocean-500/10 text-ocean-700"
+              : "border-ocean-500/20 text-ocean-600/50"
+          }`}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="2" y="2" width="5" height="12" rx="1.5" />
+            <rect x="9" y="2" width="5" height="12" rx="1.5" />
+          </svg>
+        </button>
       </div>
 
       {filtered.length === 0 ? (
@@ -160,7 +205,7 @@ export default function CarnetPage() {
                   {g.photos.length} photo{g.photos.length > 1 ? "s" : ""}
                 </span>
               </h2>
-              <div className="masonry">
+              <div className={`masonry ${colsClass}`}>
                 {g.photos.map((p) => (
                   <PhotoCard key={p.id} photo={p} onOpen={() => setActive(p)} />
                 ))}
@@ -216,6 +261,43 @@ function PhotoCard({ photo, onOpen }: { photo: Photo; onOpen: () => void }) {
         </div>
       </div>
     </button>
+  );
+}
+
+function SelectPill({
+  value,
+  onChange,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative inline-block">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none rounded-full border border-ocean-500/20 bg-white pl-4 pr-10 py-2 text-sm text-ocean-700 focus:outline-none focus:border-ocean-500 cursor-pointer"
+      >
+        {children}
+      </select>
+      <svg
+        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ocean-600/50"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="m6 9 6 6 6-6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 }
 
