@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { MAISONS } from "@/lib/constants";
 import { createStay, updateStay, deleteStay } from "@/lib/data";
+import { useProfile } from "./ProfileProvider";
+import { Avatar } from "./Avatar";
 import type { Stay } from "@/lib/types";
 
 type Props = {
@@ -13,19 +15,34 @@ type Props = {
 };
 
 export function StayForm({ profileId, existing, onClose, onSaved }: Props) {
+  const { profiles } = useProfile();
   const [arrival, setArrival] = useState(existing?.arrival ?? "");
   const [departure, setDeparture] = useState(existing?.departure ?? "");
-  const [maison, setMaison] = useState(existing?.maison ?? MAISONS[0].id);
-  const [names, setNames] = useState<string[]>(
-    existing?.guest_names && existing.guest_names.length > 0
-      ? existing.guest_names
-      : [""],
+  const [maisons, setMaisons] = useState<string[]>(existing?.maisons ?? []);
+  const [memberIds, setMemberIds] = useState<string[]>(
+    existing?.member_ids && existing.member_ids.length > 0
+      ? existing.member_ids
+      : [profileId],
+  );
+  const [extras, setExtras] = useState<string[]>(
+    existing?.extra_guests && existing.extra_guests.length > 0
+      ? existing.extra_guests
+      : [],
   );
   const [note, setNote] = useState(existing?.note ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const cleanNames = names.map((n) => n.trim()).filter(Boolean);
+  const selectedMembers = memberIds
+    .map((id) => profiles.find((p) => p.id === id))
+    .filter(Boolean);
+  const available = profiles.filter((p) => !memberIds.includes(p.id));
+  const cleanExtras = extras.map((n) => n.trim()).filter(Boolean);
+  const total = memberIds.length + cleanExtras.length;
+
+  function toggleMaison(id: string) {
+    setMaisons((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,15 +55,19 @@ export function StayForm({ profileId, existing, onClose, onSaved }: Props) {
       setError("La date de départ doit être après l'arrivée.");
       return;
     }
+    if (total === 0) {
+      setError("Ajoute au moins une personne au séjour.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         profile_id: profileId,
-        maison,
+        maisons,
         arrival,
         departure,
-        guest_count: Math.max(1, cleanNames.length),
-        guest_names: cleanNames,
+        member_ids: memberIds,
+        extra_guests: cleanExtras,
         note: note.trim() || null,
       };
       if (existing) {
@@ -107,15 +128,99 @@ export function StayForm({ profileId, existing, onClose, onSaved }: Props) {
           </Field>
         </div>
 
-        <Field label="Maison">
+        {/* MEMBRES DE LA FAMILLE */}
+        <Field label="Qui vient ? (membres de la famille)">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {selectedMembers.map(
+              (p) =>
+                p && (
+                  <span
+                    key={p.id}
+                    className="inline-flex items-center gap-1.5 bg-ocean-500/10 text-ocean-700 rounded-full pl-1 pr-2 py-1 text-sm"
+                  >
+                    <Avatar profile={p} size={22} />
+                    {p.name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMemberIds(memberIds.filter((id) => id !== p.id))
+                      }
+                      className="text-ocean-600/50 hover:text-ocean-700"
+                      aria-label={`Retirer ${p.name}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ),
+            )}
+            {selectedMembers.length === 0 && (
+              <span className="text-sm text-ocean-600/50 italic py-1">
+                Personne pour l'instant
+              </span>
+            )}
+          </div>
+          {available.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) setMemberIds([...memberIds, e.target.value]);
+              }}
+              className="input"
+            >
+              <option value="">+ Ajouter un membre…</option>
+              {available.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+
+        {/* INVITÉS MANUELS */}
+        <Field label="Autres personnes (hors famille, facultatif)">
+          <div className="space-y-2">
+            {extras.map((n, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  value={n}
+                  onChange={(e) => {
+                    const copy = [...extras];
+                    copy[i] = e.target.value;
+                    setExtras(copy);
+                  }}
+                  placeholder="Prénom"
+                  className="input flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setExtras(extras.filter((_, j) => j !== i))}
+                  className="text-ocean-600/50 hover:text-ocean-700 px-2"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setExtras([...extras, ""])}
+              className="text-sm text-ocean-600 hover:text-ocean-700 font-medium"
+            >
+              + Ajouter une personne
+            </button>
+          </div>
+        </Field>
+
+        {/* MAISONS (multiple, facultatif) */}
+        <Field label="Maison(s) (facultatif, plusieurs possibles)">
           <div className="grid grid-cols-3 gap-2">
             {MAISONS.map((m) => (
               <button
                 key={m.id}
                 type="button"
-                onClick={() => setMaison(m.id)}
+                onClick={() => toggleMaison(m.id)}
                 className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
-                  maison === m.id
+                  maisons.includes(m.id)
                     ? "border-ocean-500 bg-ocean-500/10 text-ocean-700"
                     : "border-ocean-500/20 text-ocean-600/70 hover:border-ocean-500/40"
                 }`}
@@ -129,41 +234,6 @@ export function StayForm({ profileId, existing, onClose, onSaved }: Props) {
           </div>
         </Field>
 
-        <Field label="Qui vient ? (un prénom par ligne)">
-          <div className="space-y-2">
-            {names.map((n, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={n}
-                  onChange={(e) => {
-                    const copy = [...names];
-                    copy[i] = e.target.value;
-                    setNames(copy);
-                  }}
-                  placeholder={i === 0 ? "Ton prénom" : "Prénom"}
-                  className="input flex-1"
-                />
-                {names.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setNames(names.filter((_, j) => j !== i))}
-                    className="text-ocean-600/50 hover:text-ocean-700 px-2"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setNames([...names, ""])}
-              className="text-sm text-ocean-600 hover:text-ocean-700 font-medium"
-            >
-              + Ajouter une personne
-            </button>
-          </div>
-        </Field>
-
         <Field label="Une note (facultatif)">
           <textarea
             value={note}
@@ -173,6 +243,10 @@ export function StayForm({ profileId, existing, onClose, onSaved }: Props) {
             className="input resize-none"
           />
         </Field>
+
+        <p className="text-sm text-ocean-600/70">
+          Total : <strong>{total}</strong> personne{total > 1 ? "s" : ""}
+        </p>
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
@@ -249,12 +323,12 @@ export function Modal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <div
-        className="absolute inset-0 bg-ocean-700/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-ocean-700/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-sel w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-soft p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-fade-in-up">
+      <div className="relative bg-sel w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-soft p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-fade-in-up my-0 sm:my-8">
         {children}
       </div>
     </div>

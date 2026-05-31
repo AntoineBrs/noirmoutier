@@ -8,15 +8,15 @@ export type Profile = {
 
 export type Stay = {
   id: string;
-  profile_id: string;
-  maison: string;
+  profile_id: string; // créateur / propriétaire du séjour
+  maisons: string[]; // 0..n maisons (facultatif)
   arrival: string; // YYYY-MM-DD
   departure: string; // YYYY-MM-DD
-  guest_count: number;
-  guest_names: string[] | null;
+  member_ids: string[]; // profils de la famille participant au séjour
+  extra_guests: string[]; // personnes ajoutées manuellement (hors liste)
   note: string | null;
   created_at: string;
-  // jointure éventuelle
+  // jointure éventuelle (propriétaire)
   profile?: Profile | null;
 };
 

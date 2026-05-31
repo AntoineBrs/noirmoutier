@@ -29,7 +29,7 @@ export async function fetchProfiles(): Promise<Profile[]> {
 
 export async function updateProfileAvatar(
   profileId: string,
-  avatarUrl: string,
+  avatarUrl: string | null,
 ): Promise<void> {
   if (!isSupabaseConfigured) {
     memProfiles = memProfiles.map((p) =>

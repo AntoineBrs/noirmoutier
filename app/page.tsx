@@ -4,24 +4,53 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/components/ProfileProvider";
 import { Avatar } from "@/components/Avatar";
-import { fetchStays } from "@/lib/data";
+import { fetchStays, updateStay } from "@/lib/data";
 import type { Stay } from "@/lib/types";
 import { maison } from "@/lib/constants";
 import { formatRange, isOngoing, daysUntil } from "@/lib/dates";
+import { stayCount } from "@/lib/stays";
 
 export default function Home() {
   const { current } = useProfile();
   const [stays, setStays] = useState<Stay[]>([]);
 
+  async function load() {
+    try {
+      setStays(await fetchStays());
+    } catch (e) {
+      console.error(e);
+    }
+  }
   useEffect(() => {
-    fetchStays().then(setStays).catch(console.error);
+    load();
   }, []);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const present = stays.filter((s) => isOngoing(s, todayStr));
-  const upcoming = stays
-    .filter((s) => s.arrival > todayStr)
-    .slice(0, 4);
+  const upcoming = stays.filter((s) => s.arrival > todayStr).slice(0, 4);
+
+  // Séjours où l'on m'a ajouté (je participe mais je ne suis pas l'organisateur)
+  const invitedTo = current
+    ? stays.filter(
+        (s) =>
+          s.profile_id !== current.id &&
+          s.member_ids?.includes(current.id) &&
+          s.departure >= todayStr,
+      )
+    : [];
+
+  async function removeMe(stay: Stay) {
+    if (!current) return;
+    if (!confirm("Te retirer de ce séjour ?")) return;
+    try {
+      await updateStay(stay.id, {
+        member_ids: stay.member_ids.filter((id) => id !== current.id),
+      });
+      await load();
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   return (
     <div className="animate-fade-in-up">
@@ -62,6 +91,23 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* TU AS ÉTÉ AJOUTÉ */}
+      {invitedTo.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-display text-2xl text-ocean-700 mb-1">
+            Tu participes à ces séjours
+          </h2>
+          <p className="text-ocean-600/70 text-sm mb-4">
+            Quelqu'un t'a ajouté. Tu peux te retirer si tu ne viens pas.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {invitedTo.map((s) => (
+              <StayCard key={s.id} stay={s} onRemoveMe={() => removeMe(s)} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* QUI EST LÀ */}
       <section className="mb-10">
@@ -141,15 +187,22 @@ export default function Home() {
   );
 }
 
-function StayCard({ stay, highlight }: { stay: Stay; highlight?: boolean }) {
-  const m = maison(stay.maison);
+function StayCard({
+  stay,
+  highlight,
+  onRemoveMe,
+}: {
+  stay: Stay;
+  highlight?: boolean;
+  onRemoveMe?: () => void;
+}) {
   const until = daysUntil(stay.arrival);
+  const total = stayCount(stay);
   return (
     <div
-      className={`bg-white rounded-xl2 p-4 shadow-card border-l-4 ${
+      className={`bg-white rounded-xl2 p-4 shadow-card ${
         highlight ? "ring-1 ring-ocean-400/30" : ""
       }`}
-      style={{ borderLeftColor: "transparent" }}
     >
       <div className="flex items-center gap-3 mb-2">
         {stay.profile && <Avatar profile={stay.profile} size={36} />}
@@ -158,20 +211,43 @@ function StayCard({ stay, highlight }: { stay: Stay; highlight?: boolean }) {
             {stay.profile?.name ?? "Quelqu'un"}
           </p>
           <p className="text-xs text-ocean-600/60">
-            {stay.guest_count} pers.
+            {total} pers.
           </p>
         </div>
       </div>
-      <p className="text-sm text-ocean-700/90">{formatRange(stay.arrival, stay.departure)}</p>
-      <div className="flex items-center gap-2 mt-2">
-        <span className={`inline-block w-2 h-2 rounded-full ${m.dot}`} />
-        <span className={`text-xs font-medium ${m.color}`}>{m.label}</span>
-        {!highlight && until > 0 && (
+      <p className="text-sm text-ocean-700/90">
+        {formatRange(stay.arrival, stay.departure)}
+      </p>
+      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        {stay.maisons.length > 0 ? (
+          stay.maisons.map((mid) => {
+            const m = maison(mid);
+            return (
+              <span key={mid} className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${m.dot}`} />
+                <span className={`text-xs font-medium ${m.color}`}>
+                  {m.label}
+                </span>
+              </span>
+            );
+          })
+        ) : (
+          <span className="text-xs text-ocean-600/40">Maison non précisée</span>
+        )}
+        {!highlight && !onRemoveMe && until > 0 && (
           <span className="text-xs text-ocean-600/50 ml-auto">
             dans {until} j
           </span>
         )}
       </div>
+      {onRemoveMe && (
+        <button
+          onClick={onRemoveMe}
+          className="mt-3 text-xs text-red-600/80 hover:text-red-600 font-medium"
+        >
+          Me retirer
+        </button>
+      )}
     </div>
   );
 }

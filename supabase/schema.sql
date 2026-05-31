@@ -15,12 +15,12 @@ create table if not exists profiles (
 -- 2) SÉJOURS
 create table if not exists stays (
   id uuid primary key default gen_random_uuid(),
-  profile_id uuid not null references profiles(id) on delete cascade,
-  maison text not null check (maison in ('sud', 'nord', 'annexe')),
+  profile_id uuid not null references profiles(id) on delete cascade, -- organisateur
+  maisons text[] not null default '{}',      -- 0..n maisons (facultatif)
   arrival date not null,
   departure date not null,
-  guest_count int not null default 1,
-  guest_names text[] default '{}',
+  member_ids uuid[] not null default '{}',   -- profils participants
+  extra_guests text[] not null default '{}', -- personnes hors liste
   note text,
   created_at timestamptz not null default now()
 );

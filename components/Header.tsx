@@ -70,6 +70,13 @@ export function Header() {
                   <p className="text-xs text-ocean-600/60">Connecté en tant que</p>
                   <p className="font-medium text-ocean-700">{current.name}</p>
                 </div>
+                <Link
+                  href="/profil"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-4 py-3 text-sm text-ocean-700 hover:bg-ocean-500/8 transition-colors border-b border-ocean-500/10"
+                >
+                  Mon profil
+                </Link>
                 <button
                   onClick={() => {
                     setMenuOpen(false);

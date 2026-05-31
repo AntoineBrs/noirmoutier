@@ -78,7 +78,7 @@ export function PhotoUploader({
             <img
               src={preview}
               alt="aperçu"
-              className="w-full max-h-72 object-cover"
+              className="w-full max-h-48 object-contain bg-sable-50"
             />
           ) : (
             <div className="py-12 text-ocean-600/60">
